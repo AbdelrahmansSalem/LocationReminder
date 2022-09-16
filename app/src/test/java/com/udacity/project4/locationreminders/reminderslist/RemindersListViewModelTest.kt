@@ -52,7 +52,7 @@ class RemindersListViewModelTest {
         remindersListViewModel.loadReminders()
         var value=remindersListViewModel.showSnackBar.getOrAwaitValue()
         fakeDataSource.shouldReturnErrorCompleted()
-        assertThat(value,notNullValue())
+        assertThat(value,`is`("No Reminders found"))
     }
 
     @Test
@@ -86,7 +86,7 @@ class RemindersListViewModelTest {
         runBlocking{fakeDataSource.saveReminder(reminder)}
         remindersListViewModel.loadReminders()
         var value=remindersListViewModel.remindersList.getOrAwaitValue()
-        assertThat(value, notNullValue())
+        assertThat(value[0].title, `is`("Title"))
     }
 
 }

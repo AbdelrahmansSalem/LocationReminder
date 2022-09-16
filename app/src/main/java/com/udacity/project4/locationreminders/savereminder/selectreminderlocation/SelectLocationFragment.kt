@@ -16,10 +16,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.navigation.Navigation
-import com.google.android.gms.common.api.ApiException
-import com.google.android.gms.common.api.ResolvableApiException
-import com.google.android.gms.location.*
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
@@ -41,7 +37,8 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
     private lateinit var binding: FragmentSelectLocationBinding
     private lateinit var map: GoogleMap
     private val REQUEST_LOCATION_PERMISSION = 1
-    private  var pointOfInterest: PointOfInterest? = null
+    private var pointOfInterest: PointOfInterest? = null
+    private var randomPlace=false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -51,7 +48,7 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
 
         binding.viewModel = _viewModel
         binding.lifecycleOwner = this
-        Toast.makeText(requireContext(),"Select Location OR POI You Want To Remember",Toast.LENGTH_LONG).show()
+        //Toast.makeText(requireContext(),"Select Location OR POI You Want To Remember",Toast.LENGTH_LONG).show()
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
 
@@ -60,15 +57,15 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        onLocationSelected()
         binding.saveLocation.setOnClickListener{view->
-            pointOfInterest?.let {
-                onLocationSelected()
-                Navigation.findNavController(view).navigate(SelectLocationFragmentDirections.actionSelectLocationFragmentToSaveReminderFragment())
-                return@setOnClickListener
-            }
-            Toast.makeText(requireContext(),"Select specific Place, Please",Toast.LENGTH_LONG).show()
-
+           if  (pointOfInterest != null) {
+               onLocationSelected()
+               Navigation.findNavController(view).navigate(SelectLocationFragmentDirections.actionSelectLocationFragmentToSaveReminderFragment())
+               }
+            else {
+               Toast.makeText(requireContext(), "Select specific Place, Please", Toast.LENGTH_LONG)
+                   .show()
+           }
         }
 
         return binding.root
@@ -79,6 +76,7 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
         setPoiClick(map)
         enableMyLocation()
         setMapClick(map)
+        setMapStyle(map)
     }
     private fun setMapStyle(map: GoogleMap){
         try {
@@ -96,7 +94,7 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
     private fun setMapClick(map: GoogleMap){
         map.setOnMapClickListener{latLong->
             map.clear()
-            pointOfInterest=null
+            pointOfInterest=PointOfInterest(latLong,"Random Place","Random Place")
 
             var snippet=String.format(Locale.getDefault(),
                 "Lat: %1$.5f, Long: %2$.5f",
@@ -154,37 +152,55 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
         else -> super.onOptionsItemSelected(item)
     }
 
-    private fun isPermissionGranted() : Boolean {
-        return ContextCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_FINE_LOCATION) === PackageManager.PERMISSION_GRANTED
-    }
+//    private fun isPermissionGranted() : Boolean {
+//        return ContextCompat.checkSelfPermission(
+//            requireActivity(),
+//            Manifest.permission.ACCESS_FINE_LOCATION) === PackageManager.PERMISSION_GRANTED
+//    }
 
 
-    @SuppressLint("MissingPermission")
     private fun enableMyLocation() {
-        if (isPermissionGranted()) {
-            map.setMyLocationEnabled(true)
-        }
-        else {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf<String>(android.Manifest.permission.ACCESS_FINE_LOCATION),
-                REQUEST_LOCATION_PERMISSION
-            )
+        when {
+            (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) -> {
+
+                map.isMyLocationEnabled = true
+
+            }
+            (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) ->{
+                this.requestPermissions(
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    REQUEST_LOCATION_PERMISSION
+                )
+            }
+
+            else ->
+                //Request permission
+                this.requestPermissions(
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    REQUEST_LOCATION_PERMISSION
+                )
         }
     }
-    @SuppressLint("MissingSuperCall")
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
         grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            REQUEST_LOCATION_PERMISSION -> {
 
-        if (requestCode == REQUEST_LOCATION_PERMISSION) {
-            if (grantResults.size > 0 && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                enableMyLocation()
+                if (grantResults.isNotEmpty() && (grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    enableMyLocation()
+
+                } else {
+                    Toast.makeText(context, "Location permission important here", Toast.LENGTH_LONG).show()
+                }
+
             }
+
         }
+
     }
 
 

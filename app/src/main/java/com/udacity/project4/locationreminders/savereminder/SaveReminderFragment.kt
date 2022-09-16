@@ -60,7 +60,7 @@ class SaveReminderFragment : BaseFragment() {
 
         binding.viewModel = _viewModel
 
-        geofencingClient=LocationServices.getGeofencingClient(requireActivity())
+
 
         return binding.root
     }
@@ -74,6 +74,7 @@ class SaveReminderFragment : BaseFragment() {
                 NavigationCommand.To(SaveReminderFragmentDirections.actionSaveReminderFragmentToSelectLocationFragment())
         }
 
+        geofencingClient=LocationServices.getGeofencingClient(requireContext())
         binding.saveReminder.setOnClickListener {
             val title = _viewModel.reminderTitle.value
             val description = _viewModel.reminderDescription.value
@@ -128,8 +129,7 @@ class SaveReminderFragment : BaseFragment() {
             else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
         }
         Log.d(TAG, "Request foreground only location permission")
-        ActivityCompat.requestPermissions(
-            requireActivity(),
+        this.requestPermissions(
             permissionsArray,
             resultCode
         )
@@ -140,7 +140,7 @@ class SaveReminderFragment : BaseFragment() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
-        Log.d(TAG, "onRequestPermissionResult")
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         if (
             grantResults.isEmpty() ||
@@ -149,7 +149,18 @@ class SaveReminderFragment : BaseFragment() {
                     grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
                     PackageManager.PERMISSION_DENIED))
         {
-            Toast.makeText(requireContext(),R.string.permission_denied_explanation,Toast.LENGTH_SHORT).show()
+            Snackbar.make(
+            binding.root.rootView,
+            R.string.permission_denied_explanation,
+            Snackbar.LENGTH_INDEFINITE
+        )
+            .setAction(R.string.settings) {
+                startActivity(Intent().apply {
+                    action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                    data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                })
+            }.show()
 
         } else {
             checkDeviceLocationSettingsAndStartGeofence()
@@ -160,7 +171,7 @@ class SaveReminderFragment : BaseFragment() {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
         val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
-        val settingsClient = LocationServices.getSettingsClient(requireContext())
+        val settingsClient = LocationServices.getSettingsClient(requireActivity())
         val locationSettingsResponseTask =
             settingsClient.checkLocationSettings(builder.build())
         locationSettingsResponseTask.addOnFailureListener { exception ->
@@ -173,12 +184,14 @@ class SaveReminderFragment : BaseFragment() {
                 }
             } else {
                 Toast.makeText(requireContext(),R.string.location_required_error,Toast.LENGTH_SHORT).show()
-//                Snackbar.make(
-//                    reminderActivity,
-//                    R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
-//                ).setAction(android.R.string.ok) {
-//                    checkDeviceLocationSettingsAndStartGeofence()
-//                }.show()
+                view?.let {
+                    Snackbar.make(
+                        it,
+                        R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
+                    ).setAction(android.R.string.ok) {
+                        checkDeviceLocationSettingsAndStartGeofence()
+                    }.show()
+                }
             }
         }
         locationSettingsResponseTask.addOnCompleteListener {
@@ -210,7 +223,7 @@ class SaveReminderFragment : BaseFragment() {
             .setRequestId(currentGeofence.id)
             .setCircularRegion(
                 currentGeofence.latitude!!,
-                currentGeofence?.longitude!!,
+                currentGeofence.longitude!!,
                 GeofencingConstants.GEOFENCE_RADIUS_IN_METERS
             )
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
