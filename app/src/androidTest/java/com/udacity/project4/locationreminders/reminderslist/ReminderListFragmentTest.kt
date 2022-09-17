@@ -92,7 +92,7 @@ class ReminderListFragmentTest {
             30.433,
             33.645
         )
-        repository.saveReminder(reminder)
+       runBlocking {  repository.saveReminder(reminder)}
         launchFragmentInContainer<ReminderListFragment>(Bundle.EMPTY, R.style.AppTheme)
 
         onView(withId(R.id.noDataTextView)).check(matches(not(isDisplayed())))
@@ -100,7 +100,6 @@ class ReminderListFragmentTest {
         onView(withText(reminder.description)).check(matches(isDisplayed()))
         onView(withText(reminder.location)).check(matches(isDisplayed()))
         Thread.sleep(2000)
-
     }
 
     @Test

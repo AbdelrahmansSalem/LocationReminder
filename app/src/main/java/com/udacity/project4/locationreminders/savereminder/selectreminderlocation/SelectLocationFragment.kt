@@ -48,7 +48,7 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
 
         binding.viewModel = _viewModel
         binding.lifecycleOwner = this
-        //Toast.makeText(requireContext(),"Select Location OR POI You Want To Remember",Toast.LENGTH_LONG).show()
+        Toast.makeText(requireContext(),"Select Location OR POI You Want To Remember",Toast.LENGTH_LONG).show()
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
 
@@ -61,6 +61,7 @@ class SelectLocationFragment : BaseFragment(),OnMapReadyCallback {
            if  (pointOfInterest != null) {
                onLocationSelected()
                Navigation.findNavController(view).navigate(SelectLocationFragmentDirections.actionSelectLocationFragmentToSaveReminderFragment())
+               _viewModel.showToast.value="Enter Title and Description, Please"
                }
             else {
                Toast.makeText(requireContext(), "Select specific Place, Please", Toast.LENGTH_LONG)

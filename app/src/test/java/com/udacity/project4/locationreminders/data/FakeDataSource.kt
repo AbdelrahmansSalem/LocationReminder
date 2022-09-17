@@ -11,10 +11,18 @@ class FakeDataSource(var reminders:MutableList<ReminderDTO>?= mutableListOf()) :
    private var shouldReturnError = false
 
     override suspend fun getReminders(): Result<List<ReminderDTO>> {
-            if (!shouldReturnError){
-                return Result.Success(ArrayList(reminders))
+            if (shouldReturnError){
+
+                return Result.Error("Error getting reminders")
             }
-        return Result.Error("No Reminders found")
+        else{
+                reminders?.let {
+                    return Result.Success(ArrayList(it))
+                }
+                return Result.Error("Reminders not found")
+            }
+
+
     }
 
     override suspend fun saveReminder(reminder: ReminderDTO) {
@@ -22,16 +30,23 @@ class FakeDataSource(var reminders:MutableList<ReminderDTO>?= mutableListOf()) :
     }
 
     override suspend fun getReminder(id: String): Result<ReminderDTO> {
-        var reminder=reminders?.find {
-            it.id==id
+
+        if(shouldReturnError){
+            return Result.Error("Error")
+        }
+        else{
+            var reminder=reminders?.find {
+                it.id==id
+            }
+
+            if (reminder == null) {
+                return Result.Error("No Reminder found")
+
+            } else {
+                return Result.Success(reminder)
+            }
         }
 
-        if (reminder == null) {
-            return Result.Error("No Reminder found")
-
-        } else {
-            return Result.Success(reminder)
-        }
     }
 
     override suspend fun deleteAllReminders() {
